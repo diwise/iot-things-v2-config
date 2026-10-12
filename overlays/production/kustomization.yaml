@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: iot-things-v2
+    includeSelectors: true
+
+resources:
+  - ../../base/
+
+patches:
+  - target:
+      kind: Deployment
+      name: iot-things-v2
+    path: patches/image.yaml

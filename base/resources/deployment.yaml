@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    opentelemetry: enabled
+  name: iot-things-v2
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    spec:
+      containers:
+        - env:
+            - name: GOMEMLIMIT
+              valueFrom:
+                resourceFieldRef:
+                  containerName: iot-things-v2
+                  resource: limits.memory
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+          image: ghcr.io/diwise/iot-things-v2:changeme
+          imagePullPolicy: IfNotPresent
+          name: iot-things-v2
+          ports:
+            - containerPort: 8080
+              name: default-port
+              protocol: TCP
+            - containerPort: 8000
+              name: control-port
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: control-port
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: control-port
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: control-port
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 100Mi
+          volumeMounts:
+            - name: conf-volume
+              mountPath: /opt/diwise/config
+              readOnly: true
+      serviceAccountName: iot-things-v2
+      volumes:
+        - name: conf-volume
+          configMap:
+            name: iot-things-v2-cfg-cm
